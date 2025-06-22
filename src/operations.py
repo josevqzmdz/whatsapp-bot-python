@@ -11,13 +11,13 @@ from src.custom_toolkit import WeatherTool, awsEC2Tool, DummyTool
 
 config = read_yaml("config.yaml")
 
-MODEL_NAME = config['chatbot']['MODEL_NAME']
-TEMPERATURE = config['chatbot']['TEMPERATURE']
+MODEL_NAME = config['chatbot'][os.environ('MODEL_NAME')]
+TEMPERATURE = config['chatbot'][os.environ('TEMPERATURE')]
 
 # here we instantiate the OpenAI object 
 LLM_Object = OpenAI(
-    model_name = MODEL_NAME,
-    temperature = TEMPERATURE
+    model_name = os.environ('MODEL_NAME'),
+    temperature = os.environ('TEMPERATURE')
 )
 
 search = SerpAPIWrapper()

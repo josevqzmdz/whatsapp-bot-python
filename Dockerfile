@@ -1,6 +1,6 @@
 FROM python:3.11-slim
 
-LABEL maintainer="${EMAIL}"
+LABEL maintainer="${AUTHOR_EMAIL}"
 
 WORKDIR /whatsapp_bot
 
