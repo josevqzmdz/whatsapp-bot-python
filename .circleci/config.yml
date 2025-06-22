@@ -1,0 +1,172 @@
+# todo: have a jenkins counterpart
+
+version: 3.0
+
+executors:
+  docker-publisher:
+    environment:
+      IMAGE_NAME_DOCKER_HUB: josevqzmdz/whatsapp-bot-python:latest
+    docker:
+      - image: docker:latest
+    resource_class: large
+# end of executors    
+
+jobs:
+  continuous_integration:
+    docker:
+      # cimg/base is an Ubuntu Docker image created by CircleCI with continuous 
+      # integration builds in mind. As its name suggests, this image is designed
+      # to serve as a base image for other CircleCI Convenience Images (images
+      # prefixed with cimg/).
+      - image: cimg/base:stable
+    resource_class: medium
+    steps:
+      - checkout
+      - run:
+        name: install-dependencies
+        command: |
+          sudo apt-get update
+          sudo apt update 
+          sudo apt install software-properties-common
+          sudo add-apt-repository ppa:deadsnakes/ppa -y
+          sudo apt-get install python3.11 -y
+          sudo apt install python3-pip -y
+          pip3 install flake8
+      - run:
+          name: lint-with-flake8
+          command: |
+            # stops the build if there are python syntax errors or undefined names
+            flake8 . --count --select=E9, F63, F7, F82 --show-source --statistics
+            # "exit-zero" threats all errors as warnings; the github editor is 127 char wide
+            flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+  # end of Continous Integration (CI)
+  
+  continuous_build:
+    executor: docker-publisher
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Install dependencies
+          command: |
+            apk update
+      - restore_cache:
+        keys:
+          - v1-{{ .Branch }}
+        pahts:
+          - image.tar 
+      - run:
+          name: Load Docker image layer layer cache
+          command: |
+            set +o pipefail
+            docker load -i image.tar | true
+      - run:
+          name: Build application docker image
+          command: |
+            docker build --cache-from=image -t $IMAGE_NAME_DOCKER_HUB .
+      - run:
+          name: post build tests
+          command: |
+            docker run -itd -e OPENAI_API_KEY=$OPENAI_API_KEY -e SERAPI_API_KEY=$SERAPI_API_KEY -e OPENWEATHER_API_KEY=$OPENWEATHER_API_KEY -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION --name whatsapp-bot -p 8080:8080 $IMAGE_NAME_DOCKER_HUB
+
+      - run:
+          name: save docker image layer cache
+          command: |
+            docker save -o image.tar $IMAGE_NAME_DOCKER_HUB
+      - save_cache:
+          key: v1-{{ .Branch }}-{{ epoch }}
+          paths:
+            - image.tar
+      - persist_to_workspace:
+          root: .
+          paths:
+            - ./image.tar
+  # end of continuous build
+
+  continuous_delivery:
+    steps:
+      - checkout
+      - attach_workspace:
+        at: /tmp/workspace
+      - setup_remote_docker
+      - run:
+        name: Publish docker image to docker hub 
+        command: |
+          echo: "$DOCKERHUB_ACCESS_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+          docker push $IMAGE_NAME_DOCKER_HUB
+      - run:
+        name: send a sanity check alert email
+        command: |
+          if ["${CIRCLE_BRANCH}" == "main"]; then
+            apk update
+            apk add --update py-pip
+            pip3 install load_dotenv pytz
+            cd alerts && python3 send_sanity_check_alert.py
+          fi
+  # end of continuous delivery
+
+  continuous_deployment:
+    machine: true
+    # TODO: change from AWS EC2 to google cloud computing
+    resource_class: josevqzmdz/ec2-bot
+    steps:
+      - checkout
+      - run:
+        name: Run docker image in production environment
+        command: |
+          echo "hey, im on runner...."
+          docker kill $(docker ps -q) || true
+          docker image prune -a -f
+          docker run -dit --env-file="$ENV_FILE_PATH_RUNNER" -p 8080:8080 josevqzmdz/whatsapp-bot-python:latest
+      - run:
+          name: removing unused containers
+          command: docker system prune --force
+      - run:
+          name: remove unreferenced and dangling images
+          command: docker image prune -a -fi
+      - run:
+          name: send production deployment succcess email
+          command: cd alerts && python3 send_prod_deployment_alert.py
+  # end of continuous deployment
+#end of jobs
+
+workflows:
+  CICD:
+    jobs:
+      - continuous_integration
+      - continuous_build:
+        requires:
+          - continuous_integration
+        filters:
+          branches:
+            ignore:
+              - dev 
+
+      - continuous_delivery:
+        requires:
+          - continuous_integration
+          - continuous_build
+        filters:
+          branches:
+            ignore:
+              - dev
+
+      - sanity_check:
+        type: approval
+        requires:
+          - continuous_delivery
+        filters:
+          branches:
+            only:
+              - main
+
+      - continuous_deployment:
+        requires:
+          - continuous_delivery
+          - sanity_check
+        filters:
+          brances:
+            only:
+              - main
+
+  
