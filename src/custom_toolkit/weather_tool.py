@@ -5,7 +5,7 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
-OPENWEATHER_API_KEY = os.environ.get("OPENWEATHER_API_KEY")
+OPENWEATHER_API_KEY = os.environ["OPENWEATHER_API_KEY"]
 
 desc = """
     use this tool to get info about the weather. it provides all the info given by 'open weather' in its free tier.
@@ -23,7 +23,7 @@ class WeatherTool(BaseTool):
             CITY = city
     
     if CITY is not None and isInstance(CITY, str):
-        BASE_URL = os.environ('OPENWEATHER_WEBHOOK')
+        BASE_URL = os.environ['OPENWEATHER_WEBHOOK']
         URL = BASE_URL + "appid=" + OPENWEATHER_API_KEY + "&q=" + CITY + "&units=metric"
 
         response = requests.get(URL).json()

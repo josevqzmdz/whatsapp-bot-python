@@ -10,7 +10,7 @@ def test_api():
         status_forcelist = [500, 502, 503, 504]
     )
     s.mount('http://', HTTPAdapter(max_retries = retries))
-    response = s.post(os.environ('CHATGPT_WEBHOOK') , data="succesfull webhook healthcheck ")
+    response = s.post(os.environ['CHATGPT_WEBHOOK'] , data="succesfull webhook healthcheck ")
     text_response = response.content.decode("utf-8")
     assert response.status_code == 200
     assert type(text_response) == str

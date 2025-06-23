@@ -23,4 +23,14 @@ In order to use this thing, you need to register:
 
 Run locally:
 
-1.- ensure you ha
+1.- ensure you have an openAI, twilio, AWS, openweather, an email and docker account.
+
+2.- install conda and create a conda environment:
+
+conda create -n venv python=3.11
+conda activate venv
+
+3.- install dependencies
+
+pip3 install -r requirements.txt
+

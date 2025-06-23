@@ -20,8 +20,8 @@ load_dotenv()
 
 config = read_yaml('src/config.yaml')
 
-APP_HOST = config['serving'][os.environ('APP_HOST')]
-APP_PORT = config['serving'][os.environ('APP_PORT')]
+APP_HOST = config['serving'][os.environ['APP_HOST']]
+APP_PORT = config['serving'][os.environ['APP_PORT']]
 
 os.putenv('LANG', 'en_US.UTF-8')
 os.putenv('LC_ALL', 'en_US.UTF-8')

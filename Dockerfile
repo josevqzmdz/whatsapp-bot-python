@@ -10,4 +10,4 @@ RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
 EXPOSE 80 443 8080
 
-CHD ["python", "src/app.py"]
+CMD ["python", "src/app.py"]
