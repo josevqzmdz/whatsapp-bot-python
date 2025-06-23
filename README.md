@@ -19,4 +19,8 @@ In order to use this thing, you need to register:
 3) docker
 4) twilio
 5) AWS 
-6) 
+6) circleci
+
+Run locally:
+
+1.- ensure you ha
