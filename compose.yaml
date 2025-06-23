@@ -7,3 +7,12 @@ services:
       - 8080:8080
     volumes:
       - .:/whatsapp_bot_python
+  
+#conda environment
+conda:
+  name: conda_env
+  channels:
+    - conda-forge
+  dependencies:
+    - python=3.13
+    - flask    
