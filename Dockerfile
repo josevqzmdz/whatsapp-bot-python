@@ -1,4 +1,4 @@
-FROM alpine:latest
+FROM ubuntu:latest
 
 LABEL maintainer="${AUTHOR_EMAIL}"
 
